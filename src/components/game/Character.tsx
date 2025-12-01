@@ -5,7 +5,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { Group, MeshStandardMaterial, Mesh, Vector3 } from 'three';
 import * as THREE from 'three';
 import { useGameStore, type PlayerColor } from '../../store/useGameStore';
-import { getPositionVector } from '../../utils/BoardCoordinates';
+import { getPositionVector, HOME_ENTRANCE, START_INDICES } from '../../utils/BoardCoordinates';
 import { soundManager } from '../../utils/SoundManager';
 
 interface CharacterProps {
@@ -75,7 +75,7 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
     const groupRef = useRef<Group>(null);
 
     // Movement State
-    const [targetQueue, setTargetQueue] = useState<Vector3[]>([]);
+    const [targetQueue, setTargetQueue] = useState<{ pos: Vector3; silent: boolean }[]>([]);
     const currentPos = useRef(new THREE.Vector3());
     const isMoving = useRef(false);
     const [landingEffect, setLandingEffect] = useState(false);
@@ -88,8 +88,10 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
     const hitProgress = useRef(0);
 
     // Rotation State
+    // Rotation State
     const currentRot = useRef(new THREE.Quaternion());
     const targetRot = useRef(new THREE.Quaternion());
+    const activeTarget = useRef<Vector3 | null>(null);
 
     // Initialize Position
     useEffect(() => {
@@ -182,21 +184,54 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
         if (index !== prevIndexRef.current) {
             const start = prevIndexRef.current;
             const end = index;
-            const queue: Vector3[] = [];
+            const queue: { pos: Vector3; silent: boolean }[] = [];
 
             // Check for Fight Participation
             const isAttacker = lastCapture?.attackerId === tokenId && (Date.now() - lastCapture.timestamp < 2000);
             const isDefender = lastCapture?.defenderId === tokenId && (Date.now() - lastCapture.timestamp < 2000);
 
+            // Helper to safely add to queue
+            const addToQueue = (pos: Vector3, silent: boolean = false) => {
+                const lastPos = queue.length > 0 ? queue[queue.length - 1].pos : currentPos.current;
+                if (lastPos.distanceTo(pos) > 0.1) {
+                    queue.push({ pos, silent });
+                }
+            };
+
             // Handle Base -> Start (Special Case)
             if (start === -1 && end === 0) {
-                queue.push(new Vector3(getPositionVector(colorName, 0, tokenId).x, 1.7, getPositionVector(colorName, 0, tokenId).z));
+                const p = getPositionVector(colorName, 0, tokenId);
+                addToQueue(new Vector3(p.x, 1.7, p.z));
             }
             // Handle Normal Move
             else if (start >= 0 && end > start) {
                 for (let i = start + 1; i <= end; i++) {
+                    // Check for Home Path Entry
+                    if (i === 51) {
+                        // We are entering home path. Add entrance waypoint.
+                        // @ts-ignore
+                        const entrance = HOME_ENTRANCE[colorName];
+                        if (entrance) {
+                            addToQueue(new Vector3(entrance.x, 1.7, entrance.z), true); // Silent
+                        }
+                    } else if (i <= 50) {
+                        // Check for Global Path Gaps (passing other players' home entrances)
+                        // @ts-ignore
+                        const startIndex = START_INDICES[colorName];
+                        const globalIndex = (startIndex + i) % 52;
+
+                        let gapEntrance = null;
+                        if (globalIndex === 0) gapEntrance = HOME_ENTRANCE.yellow;
+                        else if (globalIndex === 13) gapEntrance = HOME_ENTRANCE.red;
+                        else if (globalIndex === 26) gapEntrance = HOME_ENTRANCE.green;
+                        else if (globalIndex === 39) gapEntrance = HOME_ENTRANCE.blue;
+
+                        if (gapEntrance) {
+                            addToQueue(new Vector3(gapEntrance.x, 1.7, gapEntrance.z), true); // Silent
+                        }
+                    }
                     const p = getPositionVector(colorName, i, tokenId);
-                    queue.push(new Vector3(p.x, 1.7, p.z));
+                    addToQueue(new Vector3(p.x, 1.7, p.z));
                 }
             }
             else if (end === -1) {
@@ -211,7 +246,7 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
 
                         setTimeout(() => {
                             setFightState('none');
-                            setTargetQueue([new Vector3(p.x, 1.7, p.z)]);
+                            setTargetQueue([{ pos: new Vector3(p.x, 1.7, p.z), silent: false }]);
                             isMoving.current = true;
                         }, 600); // Duration of hit animation
                     }, 800); // Wait for attacker to arrive
@@ -219,7 +254,7 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
                     prevIndexRef.current = index;
                     return; // Skip default queue setting
                 } else {
-                    queue.push(new Vector3(p.x, 1.7, p.z));
+                    addToQueue(new Vector3(p.x, 1.7, p.z));
                 }
             }
 
@@ -237,7 +272,8 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
 
     useFrame((state, delta) => {
         if (groupRef.current && targetQueue.length > 0) {
-            const target = targetQueue[0];
+            const targetItem = targetQueue[0];
+            const target = targetItem.pos;
             const speed = 8 * delta;
             const dist = currentPos.current.distanceTo(target);
 
@@ -246,10 +282,13 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
                 const direction = new Vector3().subVectors(target, currentPos.current).normalize();
                 const moveStep = direction.multiplyScalar(speed);
 
-                // Rotate to face movement
-                if (direction.lengthSq() > 0.001) {
-                    const targetEuler = new THREE.Euler(0, Math.atan2(direction.x, direction.z) + Math.PI, 0);
-                    targetRot.current.setFromEuler(targetEuler);
+                // Rotate to face movement - ONLY update when target changes to prevent jitter
+                if (!activeTarget.current || !activeTarget.current.equals(target)) {
+                    if (direction.lengthSq() > 0.001) {
+                        const targetEuler = new THREE.Euler(0, Math.atan2(direction.x, direction.z) + Math.PI, 0);
+                        targetRot.current.setFromEuler(targetEuler);
+                        activeTarget.current = target.clone();
+                    }
                 }
 
                 currentPos.current.add(moveStep);
@@ -270,7 +309,9 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
                 setTargetQueue(newQueue);
 
                 // Play Step Sound
-                soundManager.play('MOVE');
+                if (!targetItem.silent) {
+                    soundManager.play('MOVE');
+                }
 
                 if (newQueue.length === 0) {
                     // Finished all moves

@@ -44,14 +44,14 @@ const FaceDots = ({ value }: { value: number }) => {
 const Dice: React.FC = () => {
     const rigidBody = useRef<RapierRigidBody>(null);
     const meshRef = useRef<THREE.Group>(null);
-    const { isRolling, setDiceValue, rollDice, diceValue } = useGameStore();
+    const { isRolling, setDiceValue, rollDice, diceValue, currentTurn, winner } = useGameStore();
     const [rolling, setRolling] = useState(false);
     const [hovered, setHovered] = useState(false);
 
     useEffect(() => {
-        document.body.style.cursor = hovered ? 'pointer' : 'auto';
+        document.body.style.cursor = hovered && !isRolling && !winner ? 'pointer' : 'auto';
         return () => { document.body.style.cursor = 'auto'; };
-    }, [hovered]);
+    }, [hovered, isRolling, winner]);
 
     useEffect(() => {
         if (isRolling && rigidBody.current) {
@@ -132,6 +132,13 @@ const Dice: React.FC = () => {
         }
     });
 
+    const handleDiceClick = (e: any) => {
+        e.stopPropagation();
+        if (!isRolling && diceValue === null && !winner) {
+            rollDice();
+        }
+    };
+
     return (
         <group>
             {/* Invisible Walls to keep dice in center */}
@@ -142,6 +149,17 @@ const Dice: React.FC = () => {
                 <CuboidCollider args={[0.5, 5, 5]} position={[3, 5, 0]} /> {/* Right */}
                 <CuboidCollider args={[5, 0.5, 5]} position={[0, 8, 0]} /> {/* Ceiling */}
             </RigidBody>
+
+            {/* Clickable Area - Invisible Box around the dice area */}
+            <mesh
+                position={[0, 5, 0]}
+                onClick={handleDiceClick}
+                onPointerOver={() => setHovered(true)}
+                onPointerOut={() => setHovered(false)}
+                visible={false}
+            >
+                <boxGeometry args={[6, 6, 6]} />
+            </mesh>
 
             <RigidBody
                 ref={rigidBody}
@@ -155,12 +173,7 @@ const Dice: React.FC = () => {
             >
                 <group
                     ref={meshRef}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (!isRolling && diceValue === null) {
-                            rollDice();
-                        }
-                    }}
+                    onClick={handleDiceClick}
                     onPointerOver={() => setHovered(true)}
                     onPointerOut={() => setHovered(false)}
                 >

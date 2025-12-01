@@ -141,27 +141,20 @@ const UIOverlay: React.FC = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Roll Button */}
-                <motion.button
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.95, y: 0 }}
-                    onClick={rollDice}
-                    disabled={isRolling}
-                    className={`
-                        group relative px-8 py-3 md:px-16 md:py-6 rounded-full font-black text-lg md:text-3xl text-white shadow-[0_4px_0_rgb(55,48,163)] md:shadow-[0_10px_0_rgb(55,48,163)] active:shadow-none transition-all
-                        ${isRolling
-                            ? 'bg-gray-500 cursor-not-allowed shadow-[0_4px_0_rgb(75,85,99)] md:shadow-[0_10px_0_rgb(75,85,99)]'
-                            : 'bg-gradient-to-b from-indigo-500 to-indigo-700 hover:brightness-110'
-                        }
-                    `}
-                >
-                    <div className="flex items-center gap-2 md:gap-4 relative z-10">
-                        <Dice5 className={`w-5 h-5 md:w-10 md:h-10 ${isRolling ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
-                        <span className="tracking-wider drop-shadow-md">{isRolling ? 'ROLLING...' : 'ROLL DICE'}</span>
-                    </div>
-                    {/* Shine effect */}
-                    <div className="absolute top-0 left-0 w-full h-1/2 bg-white/20 rounded-t-full"></div>
-                </motion.button>
+                {/* Roll Button REMOVED - Click Dice to Roll */}
+                {/* Instruction Text (Optional, can be added if needed for clarity) */}
+                <AnimatePresence>
+                    {!isRolling && !diceValue && !winner && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="text-white/80 text-lg md:text-xl font-bold tracking-wider drop-shadow-md animate-pulse"
+                        >
+                            CLICK DICE TO ROLL
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Game Over Modal */}

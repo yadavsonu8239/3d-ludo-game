@@ -89,6 +89,15 @@ export const HOME_PATHS = {
     blue: createSegment(-5.5, 0, -1.5, 0, 5)
 };
 
+// Home Entrance Points (The tile before the first home tile)
+// Used for smooth transition from Global Path to Home Path
+export const HOME_ENTRANCE = {
+    yellow: { x: 0, z: 6.5 },
+    red: { x: 6.5, z: 0 },
+    green: { x: 0, z: -6.5 },
+    blue: { x: -6.5, z: 0 }
+};
+
 // Start Indices in Global Path
 // Start is usually the 2nd tile of the "In" track (Right Row).
 // Segment starts at index 0. 2nd tile is index 1.
