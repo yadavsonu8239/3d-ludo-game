@@ -44,7 +44,7 @@ const FaceDots = ({ value }: { value: number }) => {
 const Dice: React.FC = () => {
     const rigidBody = useRef<RapierRigidBody>(null);
     const meshRef = useRef<THREE.Group>(null);
-    const { isRolling, setDiceValue, rollDice, diceValue, currentTurn, winner } = useGameStore();
+    const { isRolling, setDiceValue, rollDice, diceValue, winner } = useGameStore();
     const [rolling, setRolling] = useState(false);
     const [hovered, setHovered] = useState(false);
 

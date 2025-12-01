@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
-import { Dice5, Settings, Trophy } from 'lucide-react';
+import { Settings, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
@@ -14,7 +14,7 @@ const PLAYER_COLORS: Record<string, string> = {
 };
 
 const UIOverlay: React.FC = () => {
-    const { currentTurn, rollDice, isRolling, diceValue, playerNames, playerCount, winner, resetGame } = useGameStore();
+    const { currentTurn, isRolling, diceValue, playerNames, playerCount, winner, resetGame } = useGameStore();
     const [showSettings, setShowSettings] = React.useState(false);
 
     useEffect(() => {
