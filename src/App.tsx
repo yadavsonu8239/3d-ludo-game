@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { useGameStore } from './store/useGameStore';
 import UIOverlay from './components/ui/UIOverlay';
+import MobileWarning from './components/ui/MobileWarning';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
@@ -28,6 +29,7 @@ function App() {
             <>
               <GameCanvas />
               <UIOverlay />
+              <MobileWarning />
             </>
           )}
         </Suspense>

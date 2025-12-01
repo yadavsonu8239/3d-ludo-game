@@ -69,7 +69,7 @@ const UIOverlay: React.FC = () => {
                     </div>
 
                     {/* Player Cards */}
-                    <div className="flex flex-wrap gap-2 md:gap-4 pointer-events-auto">
+                    <div className="flex flex-wrap gap-2 md:gap-4">
                         {/* Player Card Component */}
                         {[
                             { id: 'yellow', name: playerNames.yellow, icon: '🐯', color: 'yellow' },
@@ -86,7 +86,7 @@ const UIOverlay: React.FC = () => {
                                     y: currentTurn === player.id ? 2 : 0,
                                     opacity: currentTurn === player.id ? 1 : 0.7
                                 }}
-                                className={`relative p-2 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-xl border-2 transition-colors duration-300 flex-1 min-w-[70px] md:min-w-[140px] max-w-[160px]
+                                className={`relative p-2 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-xl border-2 transition-colors duration-300 flex-1 min-w-[70px] md:min-w-[140px] max-w-[160px] pointer-events-auto
                                         ${currentTurn === player.id
                                         ? `bg-${player.color}-500/30 border-${player.color}-400 shadow-[0_0_30px_rgba(0,0,0,0.3)]`
                                         : 'bg-black/40 border-white/10'

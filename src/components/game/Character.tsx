@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { useGLTF, useAnimations, Ring, Sparkles } from '@react-three/drei';
+import { useGLTF, useAnimations, Ring, Sparkles, useCursor } from '@react-three/drei';
 import { useGraph, useFrame } from '@react-three/fiber';
 import { SkeletonUtils } from 'three-stdlib';
 import { Group, MeshStandardMaterial, Mesh, Vector3 } from 'three';
@@ -74,6 +74,14 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
     const finalScale = 1.2; // Adjusted scale
     const groupRef = useRef<Group>(null);
 
+    // Shake Animation State
+    const [isShaking, setIsShaking] = useState(false);
+    const shakeProgress = useRef(0);
+    const [hovered, setHovered] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
+    const pointerDownPos = useRef<{ x: number, y: number } | null>(null);
+    useCursor(hovered && !!isMovable);
+
     // Movement State
     const [targetQueue, setTargetQueue] = useState<{ pos: Vector3; silent: boolean }[]>([]);
     const currentPos = useRef(new THREE.Vector3());
@@ -87,7 +95,6 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
     const attackProgress = useRef(0);
     const hitProgress = useRef(0);
 
-    // Rotation State
     // Rotation State
     const currentRot = useRef(new THREE.Quaternion());
     const targetRot = useRef(new THREE.Quaternion());
@@ -358,6 +365,17 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
                     groupRef.current.rotation.z = 0;
                 }
             }
+            // Shake Animation (Denied)
+            else if (isShaking) {
+                shakeProgress.current += delta * 20;
+                const shake = Math.sin(shakeProgress.current) * 0.1;
+                groupRef.current.rotation.z = shake;
+
+                if (shakeProgress.current > Math.PI * 4) {
+                    setIsShaking(false);
+                    groupRef.current.rotation.z = 0;
+                }
+            }
             // Idle Animation
             else if (isMovable && !isMoving.current) {
                 groupRef.current.position.y = 1.7 + (Math.sin(state.clock.elapsedTime * 5) * 0.1);
@@ -371,7 +389,7 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
             }
 
             // Ensure we face the next position even when idle
-            if (!isMoving.current && colorName && index < 56 && fightState === 'none') {
+            if (!isMoving.current && colorName && index < 56 && fightState === 'none' && !isShaking) {
                 // Calculate direction to next tile
                 const nextPos = getPositionVector(colorName, index + 1, tokenId);
                 const currentVec = new Vector3(currentPos.current.x, 0, currentPos.current.z);
@@ -389,10 +407,46 @@ const Character: React.FC<CharacterProps> = ({ index, tokenId, color = '#ffffff'
     });
 
     return (
-        <group ref={groupRef} onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-        }} scale={finalScale}>
+        <group ref={groupRef}
+            onPointerDown={(e) => {
+                e.stopPropagation();
+                pointerDownPos.current = { x: e.clientX, y: e.clientY };
+                setIsPressed(true);
+            }}
+            onPointerUp={(e) => {
+                e.stopPropagation();
+                setIsPressed(false);
+                if (pointerDownPos.current) {
+                    const dx = e.clientX - pointerDownPos.current.x;
+                    const dy = e.clientY - pointerDownPos.current.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // Allow for 50px of movement (lenient click for touch)
+                    if (distance < 50) {
+                        if (isMovable) {
+                            onClick?.();
+                        } else {
+                            setIsShaking(true);
+                            shakeProgress.current = 0;
+                        }
+                    }
+                }
+                pointerDownPos.current = null;
+            }}
+            onPointerLeave={() => {
+                setIsPressed(false);
+                setHovered(false);
+                pointerDownPos.current = null;
+            }}
+            onPointerOver={() => setHovered(true)}
+            scale={isPressed ? finalScale * 0.9 : finalScale}>
+
+            {/* Invisible Hit Box for better touch detection - Expanded */}
+            <mesh position={[0, 1, 0]} visible={false}>
+                <boxGeometry args={[2.5, 4, 2.5]} />
+                <meshBasicMaterial transparent opacity={0} />
+            </mesh>
+
             <group position={[0, 0, 0]}>
                 <SoldierModel animation={isMoving.current ? "Run" : (isMovable ? "Idle" : "Idle")} color={color} />
             </group>
