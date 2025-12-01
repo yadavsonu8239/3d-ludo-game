@@ -86,8 +86,8 @@ const UIOverlay: React.FC = () => {
                                     y: currentTurn === player.id ? 2 : 0,
                                     opacity: currentTurn === player.id ? 1 : 0.7
                                 }}
-                                className={`relative p-2 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-xl border-2 transition-colors duration-300 flex-1 min-w-[80px] md:min-w-[140px] max-w-[160px]
-                                    ${currentTurn === player.id
+                                className={`relative p-2 md:p-3 rounded-xl md:rounded-2xl backdrop-blur-xl border-2 transition-colors duration-300 flex-1 min-w-[70px] md:min-w-[140px] max-w-[160px]
+                                        ${currentTurn === player.id
                                         ? `bg-${player.color}-500/30 border-${player.color}-400 shadow-[0_0_30px_rgba(0,0,0,0.3)]`
                                         : 'bg-black/40 border-white/10'
                                     }`}
@@ -103,7 +103,7 @@ const UIOverlay: React.FC = () => {
                                             {currentTurn === player.id && (
                                                 <motion.div
                                                     layoutId="active-player-dot"
-                                                    className="w-2 h-2 md:w-3 md:h-3 rounded-full"
+                                                    className="w-3 h-3 rounded-full"
                                                     style={{
                                                         backgroundColor: PLAYER_COLORS[player.color],
                                                         boxShadow: `0 0 8px ${PLAYER_COLORS[player.color]}`
@@ -122,7 +122,7 @@ const UIOverlay: React.FC = () => {
             </div>
 
             {/* Bottom Controls */}
-            <div className="flex flex-col items-center gap-3 md:gap-8 pointer-events-auto pb-4 md:pb-10 lg:pb-12 z-10 w-full max-w-6xl mx-auto">
+            <div className="flex flex-col items-center gap-3 md:gap-8 pb-4 md:pb-10 lg:pb-12 z-10 w-full max-w-6xl mx-auto">
                 {/* Dice Display */}
                 <AnimatePresence mode='wait'>
                     {diceValue && (
